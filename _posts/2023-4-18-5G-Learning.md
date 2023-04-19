@@ -39,3 +39,7 @@ mindmap2: false
 
 #### 其他
 
+NR(New Radio)：5G的新的无线接入技术
+
+LTE：仍然是5G接入技术的重要组成
+

@@ -143,4 +143,16 @@ IFFT 的实现基于 LC1881 SoC 提供的硬件加速器混合基 DFT（MRD）�
 
 ![图 2](/images/2023-4-23-OCAP_tx_rx_test/IMG_20230423-110023720.png)  
 
+以下给出 mrd 调用函数的函数原型：
 
+```c
+VOID mrd_accelerator(UINT8 *u8p_in_dtcm, UINT8 *u8p_out_base, BOOLEAN b_out_in_dtcm, BOOLEAN fft_flag, SINT32 alpha)
+```
+
+| 参数 | 说明 |
+|------|------|
+|  UINT8 *u8p_in_dtcm    |  一个指向UINT8类型数据的指针，表示输入数据的地址。UINT8是一个无符号8位整数类型 |
+| UINT8 *u8p_out_base | 一个指向UINT8类型数据的指针，表示输出数据的基地址
+|BOOLEAN b_out_in_dtcm | 一个布尔类型的变量，用于选择输出地址。(1)如果b_out_in_dtcm为TRUE，则输出地址为u8p_out_base + 0x82000000，表示输出到DTCM。(2)如果b_out_in_dtcm为FALSE，则输出地址为u8p_out_base，表示输出到SHRAM或DDR
+|BOOLEAN fft_flag | 一个布尔类型的变量，用于判断执行FFT还是IFFT。(1)如果fft_flag为TRUE，则执行IFFT。(2)如果fft_flag为FALSE，则执行FFT。
+|SINT32 alpha| 一个SINT32类型的变量，表示频域频移参数。SINT32是一个有符号32位整数类型。alpha的值应在正负1之间。

@@ -58,6 +58,22 @@ DATA_TCM_WAVEFORM_A_SECTION  at 0x00018000 size 0x00080000
 
 这样的段属性用于控制程序的内存布局，可将特定的数据放置在特定的内存区域中。
 
+#### DD_SHRAM_X1643 (WF_XC4210.lsf)
+
+```c
+DATA_SHRAM3_X1643    at 0x81A00000
+```
+
+这一行描述了 `DATA_SHRAM3_X1643` 内存段的起始地址是0x81A00000。
+
+#### DD_SHRAM_X1643 (tx_demo.h)
+
+```c
+#define DD_SHRAM_X1643   __attribute__((section(".DSECT DATA_SHRAM3_X1643")))
+```
+
+DD_SHRAM_X1643是一个宏定义，用来指示编译器将对象放置在名为 ".DSECT DATA_SHRAM3_X1643" 的段中。
+
 ## 发送端
 
 ### OFDM调制过程
@@ -72,7 +88,7 @@ DATA_TCM_WAVEFORM_A_SECTION  at 0x00018000 size 0x00080000
 
 4. 在时域符号前添加循环前缀(CP)，以提供多径抗干扰能力。
 
-5. 在时域信号上添加同步前导和保护间隔，以实现接收端的时间和频率同步。
+5. 添加SS和GP：在时域信号上添加同步前导和保护间隔，以实现接收端的时间和频率同步。
 
 至此得到时域长度为 1ms($30720*T_s$) 的数据突发。
 
@@ -106,10 +122,25 @@ memcpy(IFFT_in_data_p + 1447, data_1200, 600 * size);
 
 第一次复制操作将 `data_1200` 中的第600个元素到第1199个元素复制到 `IFFT_in_data_p` 数组的第2个元素到第601个元素；第二次复制操作将 `data_1200` 中的第0个元素到第599个元素复制到 `IFFT_in_data_p` 数组的第1447个元素到第2046个元素。
 
+#### 添加SS和GP
+
+```c
+DD_SHRAM_X1643 __attribute__((aligned(64))) complex_s16_t tx_data_prepare[30720] = {
+    #include "D:/20220728/OCAP_V3.00.02.P01_HY_20221122/OCAP_V3.00.02.P01_HY_20221122/app/TFWD/XC4210/algo/data/time_domain_ss.dat" 
+    };
+complex_s16_t * tx_data_prepare_p = tx_data_prepare;
+```
+
+上述代码定义了一个名为 `tx_data_prepare` 的 `complex_s16_t` 类型数组，包含30720个元素，用来存放发端一个长突发数据。数组的初始化数据来自于一个外部文件，该文件内部存放长度为656的前导。这个数组具有特定的内存段属性和对齐属性。
+
+为了方便操作，此处定义了一个指针指向`tx_data_prepare`。
+
 #### IFFT变换
 
 IFFT 的实现基于 LC1881 SoC 提供的硬件加速器混合基 DFT（MRD）。 MRD 是XC4210 子系统的 TCE 模块之一，支持正向和反向的复 FFT、 DFT 运算，同时允许用户自定义缩放。输入输出数据宽度均为 16 位。
 
-下图给出 MRD 加速器的工作流程。其中，输入数据必须来自 XC4210 的 DTCM，而输出数据可以选择存储至 DTCM、 SHRAM 或 DDR。数据搬移离不开 XC4210 的 DMA。它与 DTCM 和数据存储控制器共同组成了 XC4210 的数据存储器子系统（Data Memory Subsystem， DMSS）。 
+下图给出 MRD 加速器的工作流程。其中，输入数据必须来自 XC4210 的 DTCM，而输出数据可以选择存储至 DTCM、 SHRAM 或 DDR。数据搬移离不开 XC4210 的 DMA。它与 DTCM 和数据存储控制器共同组成了 XC4210 的数据存储器子系统（Data Memory Subsystem， DMSS）。
 
 ![图 2](/images/2023-4-23-OCAP_tx_rx_test/IMG_20230423-110023720.png)  
+
+

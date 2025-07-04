@@ -135,16 +135,17 @@ collections:
 index:
     banner:
         # 首页 banner 区文字颜色
-        color: "#fff"
+        color: "##f8f8f8"
+        text-shadow: '0 1px 3px rgba(0, 0, 0, 0.7)'
         # 首页导航栏文字颜色
         nav-color: "rgba(255, 255, 255, .5)"
         # 首页 banner 区背景颜色
-        background-color: "#1a1a1a"
+        background-color: "##1e2c1d"
         # 首页 banner 区背景图片
         background-image: "/wallpaperflare.com_wallpaper2.jpg"
         background-repeat: "no-repeat"
         background-size: "cover"
-        background-position: "bottom" 
+        background-position: "center" 
 # ---------------- #
 #      Comments    #
 # ---------------- #

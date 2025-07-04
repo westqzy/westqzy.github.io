@@ -140,7 +140,7 @@ index:
         # 首页导航栏文字颜色
         nav-color: "rgba(255, 255, 255, .5)"
         # 首页 banner 区背景颜色
-        background-color: "#3b2f2f"
+        background-color: "#c8e6c9"
         # 首页 banner 区背景图片
         background-image: "/wallpaperflare.com_wallpaper2.jpg"
         background-repeat: "no-repeat"

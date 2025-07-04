@@ -141,9 +141,9 @@ index:
         # 首页 banner 区背景颜色
         background-color: "#1a1a1a"
         # 首页 banner 区背景图片
-        # background-image: "/assets/images/octicons-bg.png"
-        # background-repeat: "no-repeat"
-        # background-size: "cover"
+        background-image: "/wsqbackground.png"
+        background-repeat: "no-repeat"
+        background-size: "cover"
 # ---------------- #
 #      Comments    #
 # ---------------- #

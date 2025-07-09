@@ -17,7 +17,7 @@ repository: westqzy/westqzy.github.io
 # 对 css 和 js 资源的 cdn 加速配置
 cdn:
     jsdelivr:
-        enabled: false
+        enabled: true
 # 可选组件配置
 components:
     # 分享
@@ -31,7 +31,7 @@ components:
         start_date: 2020-05-03
     # My Popular Repositories
     side_bar_repo:
-        enabled: false
+        enabled: true
         limit: 5
     # 文章字数统计
     word_count:
@@ -46,7 +46,7 @@ components:
         view: cate
     # 图片灯箱效果功能
     fancybox:
-        enabled: false
+        enabled: true
 # 压缩页面内容
 compress_html:
   clippings: all
@@ -76,9 +76,9 @@ navs:
     href: /categories/
     label: 分类
 
-#   -
-#     href: /archives/
-#     label: 归档
+  -
+    href: /archives/
+    label: 归档
 
 #   -
 #     href: /open-source/

@@ -47,6 +47,6 @@ permalink: /open-source/
             </div>
         </a>
         {% endfor %}
-    </div>  
+    </div>
 </section>
 {% endif %}

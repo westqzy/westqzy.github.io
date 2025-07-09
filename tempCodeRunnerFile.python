@@ -1,0 +1,22 @@
+
+import numpy as np
+k = 1
+startTime = [0,2,9]
+endTime = [1,4,10]
+eventTime = 10
+endTime_mod = [0] + endTime
+startTime_mod = startTime + [eventTime]
+sublist = [startTime_mod[i] - endTime_mod[i] for i in range(len(startTime_mod))]
+k = k + 1
+# max_may_arr = []
+print(sublist)
+# for sub_list_idx in range(len(sublist)-k+1):
+#     max_may = sum(sublist[sub_list_idx:sub_list_idx+k])
+#     max_may_arr.append(max_may)
+# print(max_may_arr)
+# print(max(max_may_arr))
+kernel = np.ones(k)
+convolved = np.convolve(sublist, kernel, mode='valid')
+#result = convolved[::k]  # 每 k 个取一次
+print(convolved)
+print(int(max(convolved)))

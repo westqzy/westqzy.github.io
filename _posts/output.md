@@ -1,8 +1,8 @@
 ---
 layout: post
-title: Hyper-V安装+CEVA虚拟机配置
+title: CEVA环境配置
 categories: [CEVA]
-description: Hyper-V安装+CEVA虚拟机配置
+description: Hyper-V安装和CEVA虚拟机配置
 keywords: CEVA
 mermaid: false
 sequence: false

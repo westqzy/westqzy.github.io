@@ -1,8 +1,8 @@
 ---
 layout: post
-title: CEVA环境配置
+title: Hyper-V安装+CEVA虚拟机配置
 categories: [CEVA]
-description: Hyper-V安装和CEVA虚拟机配置
+description: Hyper-V安装+CEVA虚拟机配置
 keywords: CEVA
 mermaid: false
 sequence: false
@@ -16,14 +16,14 @@ mindmap2: false
 本文档简要介绍Hyper-V的安装过程，CEVA虚拟机配置过程以及CEVA
 Toolbox的License导入教程。
 
-# 一、Hyper-V简要介绍
+## 一、Hyper-V简要介绍
 
 Hyper-V是微软开发的基于硬件的虚拟机管理程序，它允许用户在Windows操作系统之上运行不同操作系统的多个实例。目前，Hyper-V也支持Windows、Ubuntu和其他Linux发行版。由于该工具是由微软自己开发的，与其他第三方工具相比，通过Hyper-V运行
 Windows VM时的性能会更好一些。
 
 在定制方面，Hyper-V不像其他虚拟机管理程序那样功能丰富，但速度很快。原因是大多数驱动程序独立于硬件层运行，从而减少了维护虚拟机的开销。
 
-# 二、Hyper-V安装教程
+## 二、Hyper-V安装教程
 
 Hyper-V在Windows
 11专业版中可以直接使用，故不需要运行脚本来安装Hyper-V。Hyper-V在Windows
@@ -126,7 +126,7 @@ height="2.395521653543307in"}
 ![](../images/2025-07-14-CEVA安装/media/image12.png){width="5.768055555555556in"
 height="2.122916666666667in"}
 
-# 三、CEVA虚拟机配置教程
+## 三、CEVA虚拟机配置教程
 
 项目使用的CEVA开发环境需要license，故安装CEVA虚拟机并在上面配置license，（之后电脑本地CEVA开发环境会自动认证license【不一定会自动认证】，使用者不需要关注license，而直接使用开发环境）。下面介绍CEVA虚拟机的配置流程。
 
@@ -274,7 +274,7 @@ height="3.3552176290463693in"}
 3.23
 情况说明：配置好license之后就不需要打开虚拟机了，因为会在后台默认正常工作。如果突然出现验证license，可能是imtools.exe的界面被关掉了，重新打开和完成初始化进行了
 
-# 四、CEVA Toolbox的License加载教程
+## 四、CEVA Toolbox的License加载教程
 
 4.1 在安装完成CEVA
 Toolbox软件后，需要提供license才能进行正常编译和运行。在Toolbox中点击编译按键后会弹出提示框。

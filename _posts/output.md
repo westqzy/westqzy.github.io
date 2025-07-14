@@ -2,7 +2,7 @@
 layout: post
 title: Hyper-V安装+CEVA虚拟机配置
 categories: [CEVA]
-description: Hyper-V安装+CEVA虚拟机配置
+description: 本文档简要介绍Hyper-V的安装过程，CEVA虚机配置过程以及CEVA Toolbox的License导入教程。
 keywords: CEVA
 mermaid: false
 sequence: false
@@ -11,10 +11,6 @@ mathjax: false
 mindmap: false
 mindmap2: false
 ---
-
-
-本文档简要介绍Hyper-V的安装过程，CEVA虚拟机配置过程以及CEVA
-Toolbox的License导入教程。
 
 ## 一、Hyper-V简要介绍
 

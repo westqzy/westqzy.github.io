@@ -22,7 +22,7 @@ QPSK 是一种相位调制技术，通过四种不同的载波相位（如 0°�
 
 - 发送的是**绝对相位**，接收端需要**相位参考（或载波同步）**来解调。
 
-### DQPSK（Differential Quadrature Phase Shift Keying）
+### 2. DQPSK（Differential Quadrature Phase Shift Keying）
 
 DQPSK 是 QPSK 的差分版本，不直接调制绝对相位，而是通过当前符号与前一个符号相位差来表示数据。
 

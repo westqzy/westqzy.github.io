@@ -48,7 +48,9 @@ def add_heading_numbers(input_file, output_file):
 
 # 使用方式
 if __name__ == '__main__':
-    input_md = '_posts\\2025-07-15-定时偏移对OFDM和SC-FDE系统的影响.md'          # 输入文件名
+    filepath = '_posts\\'
+    input_md = '2025-07-15-定时偏移对OFDM和SC-FDE系统的影响.md'# 输入文件名
+    input_md = filepath + input_md
     # output_md = 'your_markdown_numbered.md' # 输出文件名
     output_md = input_md
     add_heading_numbers(input_md, output_md)

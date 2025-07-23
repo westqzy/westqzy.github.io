@@ -25,7 +25,8 @@ def add_heading_numbers(input_file, output_file):
         line = remove_existing_number(line, r'^(##)(\s+)[一二三四五六七八九十十二三四五六七八九十]{1,3}、\s*(.+)')
         # 检查并移除旧的编号（###）
         line = remove_existing_number(line, r'^(###)(\s+)[0-9]+[\.、]\s*(.+)')
-
+        # 清除 #### 的字母编号（如：#### (a) xxx）
+        line = remove_existing_number(line, r'^(####)(\s+)\([a-z]\)\s*(.+)')
         if line.startswith('## '):
             # 添加中文编号
             prefix = f"{chinese_numbers[sec2_count]}、"

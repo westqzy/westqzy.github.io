@@ -17,6 +17,7 @@ def add_heading_numbers(input_file, output_file):
 
     sec2_count = 0
     sec3_count = 0
+    sec4_count = 0
     new_lines = []
 
     for line in lines:
@@ -38,6 +39,14 @@ def add_heading_numbers(input_file, output_file):
             content = line.strip().split(' ', 1)[1]
             new_lines.append(f"### {prefix} {content}\n")
             sec3_count += 1
+            sec4_count = 0  # 新三级标题出现时重置四级计数
+        elif line.startswith('#### '):
+            # 添加英文字母编号：a, b, c...
+            letter = chr(ord('a') + sec4_count)
+            prefix = f"({letter})"
+            content = line.strip().split(' ', 1)[1]
+            new_lines.append(f"#### {prefix} {content}\n")
+            sec4_count += 1
         else:
             new_lines.append(line)
 

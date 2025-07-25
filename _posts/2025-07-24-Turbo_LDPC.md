@@ -324,3 +324,191 @@ BCJR 算法用于 Turbo 译码中的**软输入软输出概率计算**，其核�
 - 每次迭代都能“逼近最优解”，逐渐收敛至正确码字
 - 通常迭代 4~8 次就可达到较好性能（MATLAB默认 5 次）
 
+### 5. MATLAB 仿真
+
+#### (a) TURBO 编解码
+
+本节评估 Turbo 编码在 AWGN 信道下的性能，并分析其在不同信噪比下的误码率表现。
+
+TIPS：
+
+需要根据调制阶数和码率，将Eb/N0转换为**符号信噪比**，对应的**噪声方差**产生相应**复数噪声**并叠加在调制信号上。
+
+完整代码如下：
+
+```matlab
+clc; clear;
+% 仿真参数
+EbN0_dB = 0:0.1:4;        % Eb/N0范围 (dB)
+numBits = 1e6;          % 每个SNR仿真的比特数
+maxIter = 5;                % Turbo译码迭代次数
+M = 16;
+k = log2(M); 
+% 初始化
+ber = zeros(size(EbN0_dB));
+% Turbo码参数（LTE标准中为R=1/3）
+K = 6144; % 码长
+
+for snrIdx = 1:length(EbN0_dB)
+    numErrs = 0; numTotal = 0;
+    EbN0 = EbN0_dB(snrIdx);
+    fprintf('Simulating Eb/N0 = %.1f dB...\n', EbN0);
+
+    while numTotal < numBits
+        % ====== 1. 随机比特 ======
+        dataIn = randi([0 1], K, 1);
+
+        % ====== 2. Turbo 编码 ======
+        dataEnc = lteTurboEncode(dataIn);
+        
+        % ====== 3. QPSK 调制 ======
+%         txSymbols = 1 - 2*double(dataEnc);  % BPSK: 0 -> +1, 1 -> -1
+        txSymbols = lteSymbolModulate(dataEnc,'QPSK');
+        txSymbols2 = qammod(dataEnc, M, 'InputType','bit','UnitAveragePower',true);
+        % ====== 4. AWGN信道 ======
+        R = 1/3;                             % Turbo码率
+        EsN0 = EbN0 + 10*log10(k/3);         % 转换到Es/N0
+        SNR = 10^(EsN0/10);
+        noiseVar = 1/(2*SNR);
+        noise = sqrt(noiseVar) * (randn(size(txSymbols)) + 1i*randn(size(txSymbols)));
+        rxSymbols = awgn(txSymbols,EsN0,'measured');
+%          rxSymbols2 = txSymbols2 + noise;
+        rxSymbols2 = awgn(txSymbols2,EsN0,'measured');
+         
+%         signal_power = mean(abs(txSymbols2).^2);             % 发射信号功率
+%         noise_power = mean(abs(rxSymbols2 - txSymbols2).^2); % 差值 = 噪声估计
+%         
+%         SNR_est_linear = signal_power / noise_power;
+%         SNR_est_dB = 10 * log10(SNR_est_linear)
+                      
+        % ====== 5. 软解调 ======
+        softBits = lteSymbolDemodulate(rxSymbols,'QPSK','Soft');
+        softBits2 = qamdemod(rxSymbols2, M,'OutputType','approxllr', ...
+            'UnitAveragePower',true,'NoiseVariance',noiseVar);
+        softBits2 = softBits2*(-1);
+        % ====== 6. Turbo译码 ======
+%         llrInput = 2 * rxSymbols / noiseVar;
+        dataOut = lteTurboDecode(softBits2, maxIter);
+        % ====== 7. 错误统计 ======
+        numErrs = numErrs + sum(dataOut ~= dataIn);
+        numTotal = numTotal + length(dataIn);
+    end
+
+    % BER计算
+    ber(snrIdx) = numErrs / numTotal;
+end
+figure
+% ====== 绘图 ======
+semilogy(EbN0_dB, ber, 'o-', 'LineWidth', 2); grid on;
+xlabel('E_b/N_0 (dB)'); ylabel('Bit Error Rate (BER)');
+title(sprintf('Turbo编码（LTE标准） - MaxLog-MAP, %d次迭代', maxIter));
+legend('Turbo码 (1/3)', 'Location', 'southwest');
+```
+
+下图给出QPSK调制下，TURBO链路BER曲线：
+
+![TURBO_BER](/images/2025-07-24-Turbo_LDPC/TURBO_BER.jpg)
+
+#### (b) Turbo码与卷积码误码性能对比仿真
+
+不同 SNR（Eb/N0）条件下，分别统计 Turbo 和卷积编码系统在**软判决**与**硬判决**下的 BER（误码率）。
+
+```matlab
+%% TURBO 码和 卷积码对比
+clear; close all;
+rng default
+
+M = 4;                   % QPSK
+k = log2(M);             % Bits per symbol
+EbNoVec = (-3:6)';       % Eb/No values (dB)
+numSymPerFrame = 2016;   % Bits per frame
+
+rate = 1/3;              % Turbo/Conv 编码率
+tbl = 32;                % traceback depth for Viterbi
+trellis = poly2trellis(7,[171 133 165]);  % 卷积编码
+
+% 初始化 BER 统计
+berTurboSoft = zeros(size(EbNoVec)); 
+berTurboHard = zeros(size(EbNoVec));
+berConvSoft  = zeros(size(EbNoVec));
+berConvHard  = zeros(size(EbNoVec));
+h = waitbar(0, 'Running simulation...');
+for n = 1:length(EbNoVec)
+    snrdB = EbNoVec(n) + 10*log10(k*rate);
+    noiseVar = 10^(-snrdB/10);
+    
+    [errTurboSoft, errTurboHard, errConvSoft, errConvHard, totalBits] = deal(0);
+     waitbar(n/length(EbNoVec), h, ...
+        sprintf('Simulating: Eb/N0 = %d dB (%.0f%%)', EbNoVec(n), 100*n/length(EbNoVec)));
+    while errTurboSoft < 100 && totalBits < 1e6
+        % 1. 原始比特
+        dataIn = randi([0 1], numSymPerFrame, 1);
+        
+        %% --- Turbo编码 ---
+        dataTurboEnc = lteTurboEncode(dataIn);
+
+        % QAM调制
+        txTurbo = qammod(dataTurboEnc,M,'InputType','bit','UnitAveragePower',true);
+        rxTurbo = awgn(txTurbo, snrdB, 'measured');
+        
+        % 硬判决解调
+        rxHardTurbo = qamdemod(rxTurbo, M, 'OutputType','bit','UnitAveragePower',true);
+        rxHardTurboMapped = rxHardTurbo * -2 + 1;  % 映射为 ±1
+        rxHardTurboMapped = -rxHardTurboMapped;    % 翻转符号用于一致性
+        
+        % 软判决解调
+        rxSoftTurbo = qamdemod(rxTurbo, M, 'OutputType','approxllr', ...
+            'UnitAveragePower', true, 'NoiseVariance', noiseVar);
+        rxSoftTurbo = -rxSoftTurbo;
+        
+        % Turbo译码
+        dataTurboDecSoft = lteTurboDecode(rxSoftTurbo, 5);
+        dataTurboDecHard = lteTurboDecode(rxHardTurboMapped, 5);
+
+        errTurboSoft = errTurboSoft + sum(dataIn ~= dataTurboDecSoft);
+        errTurboHard = errTurboHard + sum(dataIn ~= dataTurboDecHard);
+
+        %% --- 卷积编码 ---
+        dataConvEnc = convenc(dataIn, trellis);
+
+        % QAM调制
+        txConv = qammod(dataConvEnc,M,'InputType','bit','UnitAveragePower',true);
+        rxConv = awgn(txConv, snrdB, 'measured');
+%         rxConv = txConv;
+        % 硬判决解调
+        rxHard = qamdemod(rxConv,M,'OutputType','bit','UnitAveragePower',true);
+        dataConvHard = vitdec(rxHard, trellis, tbl, 'cont', 'hard');
+        errConvHard = errConvHard + sum(dataIn(1:end-tbl) ~= dataConvHard(tbl+1:end));
+
+        % 软判决解调
+        rxSoft = qamdemod(rxConv,M,'OutputType','approxllr','UnitAveragePower',true,'NoiseVariance',noiseVar);
+        dataConvSoft = vitdec(rxSoft, trellis, tbl, 'cont', 'unquant');
+        errConvSoft = errConvSoft + sum(dataIn(1:end-tbl) ~= dataConvSoft(tbl+1:end));
+        
+        totalBits = totalBits + numSymPerFrame;
+    end
+
+    % 存储结果
+    berTurboSoft(n) = errTurboSoft / totalBits;
+    berTurboHard(n) = errTurboHard / totalBits;
+    berConvSoft(n)  = errConvSoft  / (totalBits - tbl);
+    berConvHard(n)  = errConvHard  / (totalBits - tbl);
+    
+    fprintf('Eb/N0 = %2d dB: TurboSoft = %.3e, TurboHard = %.3e, ConvSoft = %.3e, ConvHard = %.3e\n', ...
+        EbNoVec(n), berTurboSoft(n), berTurboHard(n), berConvSoft(n), berConvHard(n));
+end
+close(h);
+%% 绘图对比
+figure; semilogy(EbNoVec, berTurboSoft, '-o', 'LineWidth', 2); hold on;
+semilogy(EbNoVec, berTurboHard, '-d', 'LineWidth', 2);
+semilogy(EbNoVec, berConvSoft,  '-s', 'LineWidth', 2);
+semilogy(EbNoVec, berConvHard,  '-^', 'LineWidth', 2);
+semilogy(EbNoVec,berawgn(EbNoVec,'qam',M),'LineWidth', 2);
+grid on; xlabel('E_b/N_0 (dB)'); ylabel('BER');
+legend('Turbo (Soft)','Turbo (Hard)','Conv (Soft)','Conv (Hard)','Uncoded');
+title('BER Comparison: Turbo vs Convolutional (Soft/Hard Decision)');
+```
+
+下图给出QPSK调制下的对比曲线：
+
+![TURBO_VS_conv](/images/2025-07-24-Turbo_LDPC/TURBO_VS_conv.jpg)

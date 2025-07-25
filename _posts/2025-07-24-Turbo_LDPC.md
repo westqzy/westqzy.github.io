@@ -532,3 +532,332 @@ title('BER Comparison: Turbo vs Convolutional (Soft/Hard Decision)');
 以下为不同块长度 K 仿真，以分析 Turbo码块长（帧长）对误码率的影响。
 
 ![TURBO不同块长度](/images/2025-07-24-Turbo_LDPC/TURBO不同块长度.jpg)
+
+## 三、LDPC 码
+
+### 1. 概述
+
+LDPC（Low Density Parity Check Code，低密度奇偶校验码）由 Robert G. Gallager 于 1963 年首次提出。
+
+**核心特性：**
+
+- 低密度性：
+
+奇偶校验矩阵（Parity-Check Matrix）中非零元素极少（通常小于 5%），有助于降低编码解码复杂度，便于并行处理。
+
+- 接近香农极限：
+
+性能**接近信道容量**，尤其在 5G 等高速通信系统中被广泛采用。
+
+- 高吞吐量：
+
+支持并行解码结构，可结合 GPU / FPGA 实现，满足高速通信需求。
+
+- 灵活构造：
+
+可灵活设计**奇偶校验矩阵**，提升适应性与性能。
+
+### 2. 编码原理
+
+🔸 校验矩阵定义
+
+设 LDPC 校验矩阵为一个 𝑚×𝑛 的二进制稀疏矩阵 𝐻，编码后的字 𝑐 需满足：
+
+$$
+H \cdot \mathbf{c}^T=0
+$$
+
+🔸 码字构成
+
+LDPC 为系统码，码字 $$\mathbf{c}$$ 由系统位（信息位） $$\mathbf{u}$$ 和校验位 $$\mathbf{p}$$ 构成：
+
+$$
+\mathbf{c}=[\mathbf{u} \mathbf{~ p}]
+$$
+
+🔸 构造生成矩阵
+
+若校验矩阵 𝐻 可分块写作：
+
+$$
+G=\left[I \mid\left(H_1 H_2^{-1}\right)^T\right]
+$$
+
+🔸 编码公式
+
+则编码过程可记为：
+
+$$
+\mathbf{c}=\mathbf{u} G
+$$
+
+### 3. 具体例子
+
+以下通过一个具体例子解释**LDPC码的奇偶校验约束及其矩阵表示方式**，并介绍**编码的具体过程**。
+
+#### (a) LDPC 校验关系
+
+🔹 奇偶校验约束
+
+假设该 LDPC 要求所有码字 $$\mathbf{c}=\left[c_1, c_2, \ldots, c_n\right]$$ 满足一组**异或校验关系**，即：
+
+$$
+\left\{\begin{array}{l}
+c_1 \oplus c_2 \oplus c_4=0 \\
+c_2 \oplus c_3 \oplus c_5=0 \\
+c_1 \oplus c_2 \oplus c_3 \oplus c_6=0
+\end{array}\right.
+$$
+
+🔹 矩阵表示形式
+
+上述约束关系可表示为一个**稀疏的校验矩阵** 𝐻，并以矩阵形式表示：
+
+$$
+H \cdot \mathbf{c}^T=0
+$$
+
+对应矩阵形式为：
+
+$$
+H=\left[\begin{array}{llllll}
+1 & 1 & 0 & 1 & 0 & 0 \\
+0 & 1 & 1 & 0 & 1 & 0 \\
+1 & 1 & 1 & 0 & 0 & 1
+\end{array}\right]
+$$
+
+$$
+\mathbf{c}^T=\left[\begin{array}{l}
+c_1 \\
+c_2 \\
+c_3 \\
+c_4 \\
+c_5 \\
+c_6
+\end{array}\right] \quad \Rightarrow \quad H \cdot \mathbf{c}^T=\left[\begin{array}{l}
+0 \\
+0 \\
+0
+\end{array}\right]
+$$
+
+例如给定码字：
+
+$$
+\mathbf{c}=\left[\begin{array}{llllll}
+1 & 1 & 0 & 0 & 1 & 0
+\end{array}\right]
+$$
+
+满足约束条件：
+
+$$
+\begin{aligned}
+& 1 \oplus 1 \oplus 0=0  \\
+& 1 \oplus 0 \oplus 1=0  \\
+& 1 \oplus 1 \oplus 0 \oplus 0=0
+\end{aligned}
+$$
+
+
+#### (b) 编码过程
+
+**以上介绍了 LDPC 的校验关系，目的是解释 LDPC 码字应该满足什么条件。**
+
+**下面讲介绍：**
+
+🔹 已知信息比特，如何求出校验比特
+
+设已知前 3 位信息比特$$u=\left[c_1, c_2, c_3\right]=[1,1,0]$$，目标是根据校验矩阵 𝐻 的约束求出校验比特 $$\left[c_4, c_5, c_6\right]$$
+
+根据之前的奇偶校验约束：
+
+$$
+\left\{\begin{array}{l}
+c_1 \oplus c_2 \oplus c_4=0 \Rightarrow c_4=c_1 \oplus c_2=1 \oplus 1=0 \\
+c_2 \oplus c_3 \oplus c_5=0 \Rightarrow c_5=c_2 \oplus c_3=1 \oplus 0=1 \\
+c_1 \oplus c_2 \oplus c_3 \oplus c_6=0 \Rightarrow c_6=c_1 \oplus c_2 \oplus c_3=1 \oplus 1 \oplus 0=0
+\end{array}\right.
+$$
+
+由此可以手动求出完整码字：
+
+$$
+\mathbf{c}=\left[c_1, c_2, c_3, c_4, c_5, c_6\right]=[1,1,0,0,1,0]
+$$
+
+🔹 编码的两种等价表示
+
+✅ **1.** 校验矩阵约束（H）：
+
+上文已经提及，码字要满足：
+
+$$
+H \cdot \mathbf{c}^T=0
+$$
+
+✅ **2.** 生成矩阵法（G）：
+
+由信息比特向量，通过**生成矩阵** 𝐺 得到完整码字：
+
+$$
+\mathbf{c}=u \cdot G
+$$
+
+由前文校验矩阵可以求得生成矩阵 𝐺 为：
+
+（有关**校验矩阵和生成矩阵**的关系将在下节介绍）
+
+$$
+G=\left[\begin{array}{llllll}
+1 & 0 & 0 & 1 & 0 & 1 \\
+0 & 1 & 0 & 1 & 1 & 1 \\
+0 & 0 & 1 & 0 & 1 & 1
+\end{array}\right]
+$$
+
+编码过程即：
+
+$$
+\mathbf{c}=\left[\begin{array}{lll}
+1 & 1 & 0
+\end{array}\right] \cdot G=\left[\begin{array}{llllll}
+1 & 1 & 0 & 0 & 1 & 0
+\end{array}\right]
+$$
+
+🔹 小结
+
+- **校验矩阵 H** 和 **生成矩阵 G** 是同一 LDPC 编码方案的两种数学表示。
+- 从公式上看：校验矩阵用于约束条件（译码），生成矩阵用于编码计算。
+
+#### (c) 校验矩阵和生成矩阵
+
+有了**校验矩阵** 𝐻，但怎么构造**生成矩阵** 𝐺 呢？
+
+在 LDPC 编码中，**校验矩阵** 𝐻 是编码设计的起点，它定义了码字必须满足的奇偶校验约束：
+
+$$
+H \cdot c^T=0
+$$
+
+而为了完成编码，我们需要构造生成矩阵 𝐺，使得：
+
+$$
+c=u \cdot G
+$$
+
+其中 𝑢 是信息比特，𝑐 是完整码字，且必须满足校验约束。
+
+设 𝐻 是 𝑚×𝑛 的矩阵，码字长度 𝑛，信息位个数 𝑘=𝑛−𝑚。
+
+希望通过线性代数方法构造 𝐺。方法如下：
+
+**步骤一：将 𝐻 转化为系统形式（Systematic Form）**
+
+可通过**高斯消元法**将其行变换成系统形式，将 𝐻 分成两部分：
+
+$$
+H=\left[\begin{array}{ll}
+H_1 & H_2
+\end{array}\right] \quad \text { 其中: } H_1 \in \mathbb{F}_2^{m \times k}, \quad H_2 \in \mathbb{F}_2^{m \times m}
+$$
+
+要求：𝐻2 可逆（设计时强制满足）
+
+**步骤二：构造生成矩阵 𝐺**
+
+对应生成矩阵为：
+
+$$
+G=\left[I_k \mid\left(H_1 H_2^{-1}\right)^T\right]
+$$
+
+前面是 𝑘×𝑘 单位矩阵，后半部分为奇偶校验部分的“补偿项”。
+
+**步骤三：编码过程**
+
+信息位$$u \in \mathbb{F}_2^{1 \times k}$$，码字$$c \in \mathbb{F}_2^{1 \times n}$$
+ ，编码过程：
+
+$$
+c=u \cdot G
+$$
+
+✅ 回看前面的例子：
+
+假设已知：
+
+$$
+H=\left[\begin{array}{llllll}
+1 & 1 & 0 & 1 & 0 & 0 \\
+0 & 1 & 1 & 0 & 1 & 0 \\
+1 & 1 & 1 & 0 & 0 & 1
+\end{array}\right]=[\underbrace{\left[\begin{array}{lll}
+1 & 1 & 0 \\
+0 & 1 & 1 \\
+1 & 1 & 1
+\end{array}\right]}_{H_1} \underbrace{\left[\begin{array}{lll}
+1 & 0 & 0 \\
+0 & 1 & 0 \\
+0 & 0 & 1
+\end{array}\right]}_{H_2}]
+$$
+
+则：
+
+$$
+G=\left[I_3 \mid\left(H_1 H_2^{-1}\right)^T\right]=\left[I_3 \mid H_1^T\right]=\left[\begin{array}{cccccc}
+1 & 0 & 0 & 1 & 0 & 1 \\
+0 & 1 & 0 & 1 & 1 & 1 \\
+0 & 0 & 1 & 0 & 1 & 1
+\end{array}\right]
+$$
+
+#### (d) MATLAB 验证示例
+
+以下 MATLAB 代码实现了上述构造和验证过程：
+
+```matlab
+clc; clear;
+
+% Step 1: 定义校验矩阵 H（在GF(2)中）
+H = gf([
+    1 1 0 1 0 0;
+    0 1 1 0 1 0;
+    1 1 1 0 0 1
+], 1);  % GF(2)
+
+% Step 2: 拆分 H1 和 H2（H = [H1 | H2]）
+H1 = H(:, 1:3);
+H2 = H(:, 4:6);
+
+% Step 3: 求 H2 的逆
+H2_inv = inv(H2);  % 逆矩阵
+
+% Step 4: 构造生成矩阵 G = [I | (H1 * H2^-1)^T]
+G = [eye(3), (H1 * H2_inv).'];
+% temp = G*H.';
+% disp(temp.x);
+disp('生成矩阵 G = ');
+disp(G.x);  % 提取原始二进制矩阵显示
+
+% Step 5: 给定信息比特 u
+u = gf([1 1 0], 1);  % c1, c2, c3
+
+% Step 6: 编码 c = u * G
+c = u * G;
+disp('编码得到的码字 c = ');
+disp(c.x);  % 显示为普通二进制数
+
+% Step 7: 校验：H * c^T 应为全零向量
+check = H * c.';
+disp('校验结果 H * c^T = ');
+disp(check.x);  % 应该为 [0; 0; 0]
+```
+
+需要注意的是：
+
+- 所有运算必须在 GF(2) 上进行（逻辑异或 + 与）；
+- 校验矩阵 𝐻 决定校验关系，生成矩阵 𝐺 决定编码规则，但两者本质一样。

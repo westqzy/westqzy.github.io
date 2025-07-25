@@ -512,3 +512,23 @@ title('BER Comparison: Turbo vs Convolutional (Soft/Hard Decision)');
 下图给出QPSK调制下的对比曲线：
 
 ![TURBO_VS_conv](/images/2025-07-24-Turbo_LDPC/TURBO_VS_conv.jpg)
+
+#### (c) 译码次数迭代仿真
+
+上述代码易改成译码迭代次数对比仿真框架，如下所示：
+
+![TURBO译码迭代次数](/images/2025-07-24-Turbo_LDPC/TURBO译码迭代次数.jpg)
+
+#### (d) 不同调制方式下的Turbo性能对比
+
+进一步将仿真维度切换为不同调制方式（QPSK、16QAM、64QAM）
+
+**需要注意的是不同调制阶数在仿真时应使用不同的SNR区间。**
+
+![TURBO不同调制](/images/2025-07-24-Turbo_LDPC/TURBO不同调制.jpg)
+
+#### (e) 不同块长（K）对Turbo性能的影响
+
+以下为不同块长度 K 仿真，以分析 Turbo码块长（帧长）对误码率的影响。
+
+![TURBO不同块长度](/images/2025-07-24-Turbo_LDPC/TURBO不同块长度.jpg)

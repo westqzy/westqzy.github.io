@@ -2,7 +2,7 @@
 layout: post
 title: TURBO码和LDPC码
 categories: [通信, 信道编码]
-description: 基础的信道编码
+description: TURBO码和LDPC码
 keywords: 通信, 信道编码
 mermaid: false
 sequence: false
@@ -977,11 +977,15 @@ legend('LDPC 1/3', 'Location', 'southwest');
 
 **本仿真中的处理方式：避免补零，直接选合法块长**，使用这些标准值可避免补齐 filler 等操作。
 
+仿真结果如下：
+
+![LDPC_BER](/images/2025-07-24-Turbo_LDPC/LDPC_BER.jpg)
+
 #### (b) LDPC VS TURBO
 
 仿真对比LDPC和TURBO的性能对比。Turbo 和 LDPC 的性能比较接近：
 
-![LDPC_VS_LDPC](../images/2025-07-24-Turbo_LDPC/LDPC_VS_LDPC.jpg)
+![LDPC_VS_LDPC](/images/2025-07-24-Turbo_LDPC/LDPC_VS_LDPC.jpg)
 
 ## 四、总结
 

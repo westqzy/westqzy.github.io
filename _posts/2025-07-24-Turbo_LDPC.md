@@ -861,3 +861,119 @@ disp(check.x);  % 应该为 [0; 0; 0]
 
 - 所有运算必须在 GF(2) 上进行（逻辑异或 + 与）；
 - 校验矩阵 𝐻 决定校验关系，生成矩阵 𝐺 决定编码规则，但两者本质一样。
+
+### LDPC 解码介绍（简要说明）
+
+LDPC 解码的核心思想是：
+
+**根据校验矩阵 𝐻，利用接收信号的信息，反复迭代逼近满足所有校验条件的码字。**
+
+🔹 解码目标
+
+已知：
+
+- 接收端获得的软信息（如 LLR 值）；
+- LDPC 校验矩阵 𝐻。
+
+解码器需要从中恢复出原始信息比特 𝑢，使得输出码字 𝑐 满足：
+
+$$
+H \cdot c^T=0
+$$
+
+🔹 主流解码算法
+
+✅ BP 算法（Belief Propagation，置信传播）
+
+- 基于 Tanner 图；
+- 在**校验节点**与**变量节点**之间反复传递信息；
+- 迭代更新每一比特的“置信度”（如 LLR）直到收敛。
+
+✅ Min-Sum 算法（简化版 BP）
+
+- 将 BP 中复杂的 tanh 运算简化为 min 操作；
+- 性能略低于 BP，但复杂度更低，易于硬件实现。
+
+### MATLAB 仿真验证
+
+#### LDPC 编解码
+
+本节展示一个完整的基于 5G NR 标准 LDPC 编解码的蒙特卡洛仿真过程，统计不同信噪比下的比特误码率（BER）。本例采用：
+
+- Base Graph 1 (BGN=1)
+- QPSK 调制
+- AWGN信道
+
+```matlab
+clc; clear;
+
+% ==== 参数设置 ====
+EbN0_dB = -2:0.2:3;           % Eb/N0范围
+numBitsPerSNR = 1e6;          % 每个SNR下模拟的比特数
+maxIter = 22;                 % LDPC最大译码迭代次数
+modType = 'QPSK';             % 调制方式
+M = 4; k = log2(M);           % 每符号bit数
+
+% LDPC参数（5G NR Base Graph 2）
+bit_len = 22*288; 
+bgn = 1;                      % Base graph number
+R = 1/3;  % 实际码率
+
+ber = zeros(size(EbN0_dB));   % 初始化BER结果
+
+for snrIdx = 1:length(EbN0_dB)
+    EbN0 = EbN0_dB(snrIdx);
+    numErrs = 0; numTotal = 0;
+    fprintf('Simulating Eb/N0 = %.1f dB...\n', EbN0);
+
+    while numTotal < numBitsPerSNR
+        % ==== 1. 生成原始数据（含填充） ====
+        data = randi([0 1], bit_len, 1);     % 信息比特
+        %txcbs = [data; -1*ones(F,1)];    % 添加filler
+
+        % ==== 2. LDPC编码 ====
+        codeword = nrLDPCEncode(data, bgn);
+
+        % ==== 3. QPSK调制 ====
+        modSig = qammod(codeword, M, 'InputType','bit','UnitAveragePower',true);
+
+        % ==== 4. AWGN信道 ====
+        EsN0 = EbN0 + 10*log10(k*R);         % 转换为符号能量比
+        SNR = 10^(EsN0/10);                  
+        noiseVar = 1/(2*SNR);                % 复高斯每维噪声功率
+        rxSig = awgn(modSig, EsN0, 'measured');
+
+        % ==== 5. 软解调 ====
+        llr = qamdemod(rxSig, M,'OutputType','approxllr', ...
+            'UnitAveragePower',true,'NoiseVariance',noiseVar);
+        
+        % ==== 6. LDPC译码 ====
+        decoded = nrLDPCDecode(llr, bgn, maxIter);
+
+        % ==== 7. 填充位对齐为0，进行比特比较 ====
+        txCompare = data;
+        numErrs = numErrs + sum(decoded ~= txCompare);
+        numTotal = numTotal + bit_len;
+    end
+
+    ber(snrIdx) = numErrs / numTotal;
+end
+
+% ==== 绘图 ====
+figure;
+semilogy(EbN0_dB, ber, 'o-', 'LineWidth', 2); grid on;
+xlabel('E_b/N_0 (dB)'); ylabel('Bit Error Rate (BER)');
+title(sprintf('5G LDPC (BGN=%d), QPSK', bgn));
+legend('LDPC 1/3', 'Location', 'southwest');
+```
+
+📌 关于仿真中码长的说明
+
+在 5G NR LDPC 编码中，信息块长度 𝐾 通常需要从一组标准允许的取值集合中选取，否则会涉及：
+
+- Filler bits（填充比特）插入：将无效位置填为 -1
+- LLR 对应位置置零：解调后需手动屏蔽 filler 位影响
+- 对比误码时需剔除 filler 区，否则统计不准确
+
+**本仿真中的处理方式：避免补零，直接选合法块长**，使用这些标准值可避免补齐 filler 等操作。
+

@@ -59,7 +59,7 @@ def add_heading_numbers(input_file, output_file):
 # 使用方式
 if __name__ == '__main__':
     filepath = '_posts\\'
-    input_md = '2025-08-11-5G_IAB.md'# 输入文件名
+    input_md = '2025-08-18-SDR程序代码结构.md'# 输入文件名
     input_md = filepath + input_md
     # output_md = 'your_markdown_numbered.md' # 输出文件名
     output_md = input_md

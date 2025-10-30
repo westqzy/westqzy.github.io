@@ -1,66 +1,94 @@
-import pandas as pd
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils.dataframe import dataframe_to_rows
 
-# 数据
-data = {
-    "": ["1/5", "1/3", "1/2", "2/3", "4/5", "8/9"],
-    "QPSK": [-1.9, 0.1, 2.2, 4.2, 6.0, 7.0],
-    "16QAM": [2.8, 5.2, 8.5, 11.0, 13.0, 15.5],
-    "64QAM": [7.8, 14.0, 22.0, 29.0, 30.0, 32.0],
+
+import re
+import random
+from datetime import datetime
+
+# ========= 1) 帅又可爱标准（整活用）=========
+STANDARD = {
+    "写代码不摆烂": True,
+    "PR标题不敷衍": True,
+    "周五不随缘上线": True,
+    "喝水次数>=5": 6,       # 今天喝水 6 次，健康又可爱（不服来改）
+    "对对象温柔分>=90": 95, # 情绪稳定，温柔拉满
+    "变量名可读性>=90": 93, # 帅在命名，爱在注释
 }
-df = pd.DataFrame(data)
 
-# 新建Excel
-wb = Workbook()
-ws = wb.active
-ws.title = "表格"
+def handsome_cute_score(std: dict) -> int:
+    base = 60
+    # 简单搞笑加分逻辑
+    if std.get("写代码不摆烂"): base += 8
+    if std.get("PR标题不敷衍"): base += 7
+    if std.get("周五不随缘上线"): base += 10
+    base += min(int(std.get("喝水次数>=5", 0)) * 2, 10)
+    base += min(int(std.get("对对象温柔分>=90", 0)) // 10, 10)
+    base += min(int(std.get("变量名可读性>=90", 0)) // 10, 10)
+    return min(base, 100)
 
-# 写入数据
-for r in dataframe_to_rows(df, index=False, header=True):
-    ws.append(r)
+# ========= 2) 触发词 & 回复模板 =========
+FLIRT_TRIGGERS = [
+    r"(帅|可爱|想你|抱|亲|贴|么么|kiss|抱抱)",
+    r"(调戏|撩|撩我|撩下|撩一下)",
+    r"(想见|见面|约|约会)",
+]
 
-# 样式
-header_fill = PatternFill("solid", fgColor="E6E6E6")
-index_fill = PatternFill("solid", fgColor="F2F2F2")
-alt_fill = PatternFill("solid", fgColor="FAFAFA")
-font_bold = Font(bold=True)
-center_align = Alignment(horizontal="center", vertical="center")
-thin_border = Border(
-    left=Side(style="thin", color="BFBFBF"),
-    right=Side(style="thin", color="BFBFBF"),
-    top=Side(style="thin", color="BFBFBF"),
-    bottom=Side(style="thin", color="BFBFBF"),
-)
+NORMAL_REPLIES = [
+    "收到～我先把单元测试过了，再把你抱走😎",
+    "排期已排好：先温柔对你→再修这个 bug →再继续温柔对你。",
+    "我很忙，但对你永远有空。（代码也会给你看～）",
+    "报告：符合‘又帅又可爱’标准，已提交自查报告等待你签字✅",
+]
 
-# 表头样式
-for cell in ws[1]:
-    cell.fill = header_fill
-    cell.font = font_bold
-    cell.alignment = center_align
-    cell.border = thin_border
+FLIRTY_REPLIES = [
+    "你再这么夸，我就把今晚的时间全排给你啦😉",
+    "热修复：立刻到你身边，修复‘想你缺陷’💖",
+    "已开启甜度加倍模式：抱抱+亲亲+陪你写作业～",
+    "你的标准我全都达成了，还要不要加一条：只对你撒娇？😍",
+]
 
-# 数据区样式
-for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
-    for idx, cell in enumerate(row):
-        cell.alignment = center_align
-        cell.border = thin_border
-        if idx == 0:
-            cell.fill = index_fill
-            cell.font = font_bold
-        elif cell.row % 2 == 0:
-            cell.fill = alt_fill
+DEFLECT_REPLIES = [
+    "先不皮，给你看点真本事：tests 全绿✅，CI 通过✅。",
+    "你这么撩，我容易心猿意马……但代码更快写完给你看！",
+    "我把 TODO 清空了，现在只剩一个任务：陪你。",
+]
 
-# 自动列宽
-for col in ws.columns:
-    max_length = 0
-    col_letter = col[0].column_letter
-    for cell in col:
-        if cell.value:
-            max_length = max(max_length, len(str(cell.value)))
-    ws.column_dimensions[col_letter].width = max_length + 2
+def is_flirt(msg: str) -> bool:
+    m = msg.lower().strip()
+    return any(re.search(p, m) for p in FLIRT_TRIGGERS)
 
-# 保存
-wb.save("对比度柔和表格模板.xlsx")
-print("已保存为 对比度柔和表格模板.xlsx")
+def choose_reply(msg: str) -> str:
+    if is_flirt(msg):
+        # 50% 回撩，50% 正经+回撩
+        if random.random() < 0.5:
+            return random.choice(FLIRTY_REPLIES)
+        else:
+            return random.choice(DEFLECT_REPLIES) + " " + random.choice(FLIRTY_REPLIES)
+    else:
+        return random.choice(NORMAL_REPLIES)
+
+# ========= 3) 帅可爱认证卡片 =========
+def cert_card(score: int) -> str:
+    level = "💯 满分甜心" if score >= 95 else ("✨ 高分帅可爱" if score >= 85 else "✅ 合格小可爱")
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M")
+    return (
+        "┏━━━━━━━━━━━━┓\n"
+        f"┃  帅可爱认证：{level}\n"
+        f"┃  综合评分：{score}/100\n"
+        "┃  准则：不摆烂/不摆烂命名/温柔/多喝水\n"
+        f"┃  时间：{ts}\n"
+        "┗━━━━━━━━━━━━┛"
+    )
+
+# ========= 4) 交互入口 =========
+if __name__ == "__main__":
+    print("【对象调戏应对机 · Dr.Qi 版】")
+    score = handsome_cute_score(STANDARD)
+    print(cert_card(score))
+    print("\n给我一句‘对象发来的话’，我来帮你回：")
+    try:
+        msg = input("> ").strip()
+    except EOFError:
+        msg = "你今天帅又可爱吗？给我看看代码～"
+    reply = choose_reply(msg)
+    print("\n建议回复：")
+    print(reply)
